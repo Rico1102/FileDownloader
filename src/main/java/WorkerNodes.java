@@ -29,10 +29,11 @@ public class WorkerNodes implements Runnable {
             connection.setRequestProperty("Range", "bytes=" + this.startByte + "-" + this.endByte);
 //            System.out.println("Thread " + Thread.currentThread().getId() + " is downloading bytes " + this.startByte + " to " + this.endByte);
             InputStream inputStream = connection.getInputStream();
-            byte[] buffer = new byte[1024 * 1024];
+            byte[] buffer = new byte[4 * 1024 * 1024];
             int bytesRead;
             RandomAccessFile randomAccessFile = new RandomAccessFile(this.downloadDir + "\\" + this.fileName, "rw");
             randomAccessFile.seek(this.startByte);
+//            System.out.println("Thread " + Thread.currentThread().getId() + " is writing to file from " + this.startByte + " to " + this.endByte);
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 // Write the buffer to the file
                 randomAccessFile.write(buffer, 0, bytesRead);

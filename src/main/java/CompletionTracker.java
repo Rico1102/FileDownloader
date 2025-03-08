@@ -9,6 +9,7 @@ public class CompletionTracker {
             throw new IllegalArgumentException("Chunks cannot be zero");
         }
         this.chunks = chunks;
+        System.out.println("Total Chunks: " + this.chunks);
     }
 
     public synchronized void markChunkCompleted() {
@@ -24,7 +25,7 @@ public class CompletionTracker {
         while (!this.chunksDownloaded.equals(this.chunks)) {
             Float progress = this.getPercentage();
             String bar = "#".repeat((int) (progress / 2)) + "-".repeat((int) (50 - (progress / 2)));
-            System.out.print("\r[" + bar + "] " + progress + "%");
+            System.out.print("\r[" + bar + "] " + progress + "% Time Spent: " + (System.currentTimeMillis() - startTimestamp.getTime()) / 1000 + "s");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -33,9 +34,9 @@ public class CompletionTracker {
         }
         Float progress = this.getPercentage();
         String bar = "#".repeat((int) (progress / 2)) + "-".repeat((int) (50 - (progress / 2)));
-        System.out.print("\r[" + bar + "] " + progress + "%\n");
+        System.out.print("\r[" + bar + "] " + progress + "% Time Spent: " + (System.currentTimeMillis() - startTimestamp.getTime()) / 1000 + "s\n");
         Timestamp endTimestamp = new Timestamp(System.currentTimeMillis());
-        System.out.println(String.format("Time taken to download the file: %.2f seconds", (endTimestamp.getTime() - startTimestamp.getTime())/1000f));
+        System.out.println(String.format("Time taken to download the file: %.2f seconds", (endTimestamp.getTime() - startTimestamp.getTime()) / 1000f));
     }
 
 }

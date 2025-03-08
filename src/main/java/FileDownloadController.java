@@ -1,11 +1,35 @@
+import java.util.HashMap;
+import java.util.Map;
+
 public class FileDownloadController {
 
-    public static void main(String[] args) {
-//        String fileUrl = "https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4";
-        String downloadDir = "E:\\Playground\\FileDownloader";
-        String fileUrl = "https://drive.usercontent.google.com/download?id=1_sXdYflb3z9TgV7A_R9m9kdtRao4M6-8&confirm=t";
-        FileDownloader fileDownloader = new FileDownloader(fileUrl, downloadDir, "IMG_3317.MOV");
-        fileDownloader.download();
+    Map<String, FileDownloader> downloadInProgressMap;
+    Map<String, FileDownloader> downloadCompletedMap;
+
+    public FileDownloadController() {
+        downloadInProgressMap = new HashMap<>();
+        downloadCompletedMap = new HashMap<>();
     }
+
+    public void submitDownloadRequest(String fileUrl, String downloadDir, String fileName, String downloadId) {
+        FileDownloader fileDownloader = new FileDownloader(fileUrl, downloadDir, fileName);
+        downloadInProgressMap.put(downloadId, fileDownloader);
+        new Thread(() -> {
+            fileDownloader.download();
+            downloadInProgressMap.remove(downloadId);
+            downloadCompletedMap.put(downloadId, fileDownloader);
+        }).start();
+    }
+
+    public float getDownloadProgress(String downloadId) {
+        if (downloadInProgressMap.containsKey(downloadId)) {
+            return downloadInProgressMap.get(downloadId).getDownloadProgress();
+        } else if (downloadCompletedMap.containsKey(downloadId)) {
+            return 100.0f;
+        } else {
+            return 0.0f;
+        }
+    }
+
 
 }

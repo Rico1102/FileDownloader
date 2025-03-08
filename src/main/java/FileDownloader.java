@@ -8,28 +8,32 @@ import java.util.concurrent.TimeUnit;
 
 public class FileDownloader {
 
-    private final String fileUrl;
     private final String downloadDir;
-
     private final String fileName;
-
     private final CompletionTracker completionTracker;
-
     private final long fileSize;
-
     private final Long chunkSize = 1024L * 1024L * 10; //10Mb
-
     private final ThreadPoolExecutor threadPoolExecutor;
-
     private final long maxFileSize = 1024L * 1024 * 1024 * 2;
+    private String fileUrl;
 
     public FileDownloader(String fileUrl, String downloadDir, String fileName) {
-        this.fileUrl = fileUrl;
+        this.fileUrl = this.reformFileUrl(fileUrl);
         this.downloadDir = downloadDir;
         this.fileName = fileName;
         this.fileSize = this.getFileSize(fileUrl);
         this.completionTracker = new CompletionTracker(this.fileSize / this.chunkSize);
-        this.threadPoolExecutor = new ThreadPoolExecutor(5, 5, 1000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>((int) (maxFileSize/this.chunkSize + 1))) ;
+        this.threadPoolExecutor = new ThreadPoolExecutor(4, 5, 1000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>((int) (maxFileSize / this.chunkSize + 1)));
+    }
+
+    private String reformFileUrl(String fileUrl) {
+        String updatedUrl = fileUrl;
+        if (fileUrl.contains("drive.google.com")) {
+            String fileId = fileUrl.split("/")[5];
+            updatedUrl = "https://drive.usercontent.google.com/download?confirm=t&id=" + fileId;
+        }
+        System.out.println("Updated URL: " + updatedUrl);
+        return updatedUrl;
     }
 
     private long getFileSize(String fileUrl) {
@@ -50,7 +54,7 @@ public class FileDownloader {
     public void download() {
         // Download the file using multiple threads
         try {
-            if(this.fileSize > this.maxFileSize){
+            if (this.fileSize > this.maxFileSize) {
                 System.out.println("File size is too large, Aborting the download.");
                 return;
             }
@@ -73,10 +77,18 @@ public class FileDownloader {
                 threadPoolExecutor.submit(workerNode);
             }
             threadPoolExecutor.shutdown();
+            threadPoolExecutor.awaitTermination(30, TimeUnit.MINUTES);
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Not Able to create the file in desired location");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            System.out.println("Thread pool executor interrupted");
         }
+    }
+
+    public float getDownloadProgress() {
+        return this.completionTracker.getPercentage();
     }
 
 }
