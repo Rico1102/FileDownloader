@@ -1,24 +1,40 @@
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class FileDownloadController {
 
+    Set<String> downloadInQueue;
     Map<String, FileDownloader> downloadInProgressMap;
     Map<String, FileDownloader> downloadCompletedMap;
 
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+
     public FileDownloadController() {
+        downloadInQueue = new HashSet<>();
         downloadInProgressMap = new HashMap<>();
         downloadCompletedMap = new HashMap<>();
     }
 
-    public void submitDownloadRequest(String fileUrl, String downloadDir, String fileName, String downloadId) {
-        FileDownloader fileDownloader = new FileDownloader(fileUrl, downloadDir, fileName);
-        downloadInProgressMap.put(downloadId, fileDownloader);
-        new Thread(() -> {
+    public void submitDownloadRequest(String fileUrl, String downloadDir, String fileName, String downloadId, CountDownLatch countDownLatch) {
+        downloadInQueue.add(downloadId);
+        executor.submit(new Thread(() -> {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("Starting Download for file " + fileName);
+            countDownLatch.countDown();
+            FileDownloader fileDownloader = new FileDownloader(fileUrl, downloadDir, fileName);
+            this.downloadInQueue.remove(downloadId) ;
+            downloadInProgressMap.put(downloadId, fileDownloader) ;
             fileDownloader.download();
-            downloadInProgressMap.remove(downloadId);
-            downloadCompletedMap.put(downloadId, fileDownloader);
-        }).start();
+        }));
     }
 
     public float getDownloadProgress(String downloadId) {

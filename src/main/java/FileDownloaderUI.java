@@ -9,8 +9,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 public class FileDownloaderUI extends Application {
 
@@ -30,7 +32,7 @@ public class FileDownloaderUI extends Application {
         // Input Fields
         TextField fileUrlField = new TextField();
         fileUrlField.setPromptText("File URL");
-        fileUrlField.setText("https://drive.usercontent.google.com/download?confirm=t&id=1-ck_USSw4YvVY3GsDMvryoN8eGRb5mDN");
+        fileUrlField.setText("https://drive.usercontent.google.com/download?confirm=t&id=1_sXdYflb3z9TgV7A_R9m9kdtRao4M6-8");
 
         TextField locationField = new TextField();
         locationField.setPromptText("Save Location");
@@ -38,7 +40,7 @@ public class FileDownloaderUI extends Application {
 
         TextField fileNameField = new TextField();
         fileNameField.setPromptText("File Name");
-        fileNameField.setText("1_27_gb.mov");
+        fileNameField.setText("90_mb.mov");
 
         // Add Button
         Button addButton = new Button("Add to Queue");
@@ -91,18 +93,27 @@ public class FileDownloaderUI extends Application {
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
             }
 
+            CountDownLatch countDownLatch = new CountDownLatch(1) ;
 
-            submitRequest(fileRequest);
-            fileRequest.setStatus("Downloading");
+            Task<Void> submitTask = new Task<>() {
+                @Override
+                protected Void call() {
+                    submitRequest(fileRequest, countDownLatch);
+                    return null;
+                }
+            };
+            new Thread(submitTask).start();
 
 
-            Task<Void> task = new Task<Void>() {
+            Task<Void> task = new Task<>() {
                 @Override
                 protected Void call() throws Exception {
+                    countDownLatch.await();
+                    Timestamp startTimestamp = new Timestamp(System.currentTimeMillis());
+                    System.out.println("Countdown reached to zero for file : " + fileName);
                     while (true) {
                         float progress = fileDownloadController.getDownloadProgress(fileRequest.getId());
                         String downloadSpeed = fileDownloadController.getDownloadSpeed(fileRequest.getId());
-                        System.out.println("Progress: " + progress);
                         Platform.runLater(() -> {
                             progressBar.setProgress(progress / 100);
                             statusLabel.setText("Downloading  | " + downloadSpeed);
@@ -111,11 +122,10 @@ public class FileDownloaderUI extends Application {
                         });
                         if (progress == 100.0) {
                             ongoingDownloads.remove(fileRequest);
+                            Timestamp endTimestamp = new Timestamp(System.currentTimeMillis());
                             Platform.runLater(() -> {
-                                statusLabel.setText("Completed");
+                                statusLabel.setText(String.format("Downloaded in %.2f seconds", (endTimestamp.getTime() - startTimestamp.getTime()) / 1000f));
                             });
-
-                            fileRequest.setSpeed("0 Kb/s");
                             fileRequest.setStatus("Completed");
                             break;
                         }
@@ -128,9 +138,9 @@ public class FileDownloaderUI extends Application {
             new Thread(task).start();
 
             // Clear fields after adding
-            fileUrlField.clear();
-            locationField.clear();
-            fileNameField.clear();
+//            fileUrlField.clear();
+//            locationField.clear();
+//            fileNameField.clear();
         });
 
         // Layout
@@ -143,7 +153,7 @@ public class FileDownloaderUI extends Application {
                 scrollPane
         );
 
-        Scene scene = new Scene(layout, 600, 400);
+        Scene scene = new Scene(layout, 600, 1000);
         scene.widthProperty().addListener((obs, oldVal, newVal) -> {
             scrollPane.setPrefWidth(newVal.doubleValue());
         });
@@ -155,8 +165,8 @@ public class FileDownloaderUI extends Application {
         primaryStage.show();
     }
 
-    private void submitRequest(FileRequest fileRequest) {
-        fileDownloadController.submitDownloadRequest(fileRequest.getUrl(), fileRequest.getLocation(), fileRequest.getFileName(), fileRequest.getId());
+    private void submitRequest(FileRequest fileRequest, CountDownLatch countDownLatch) {
+        fileDownloadController.submitDownloadRequest(fileRequest.getUrl(), fileRequest.getLocation(), fileRequest.getFileName(), fileRequest.getId(), countDownLatch);
     }
 
     // Helper method for alerts

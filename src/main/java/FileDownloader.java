@@ -12,9 +12,9 @@ public class FileDownloader {
     private final String fileName;
     private final CompletionTracker completionTracker;
     private final long fileSize;
-    private final Long chunkSize = 1024L * 1024L * 100; //10Mb
+    private Long chunkSize = 1024L * 1024L * 100; //10Mb
     private final ThreadPoolExecutor threadPoolExecutor;
-    private final long maxFileSize = 1024L * 1024 * 1024 * 2;
+    private final long maxFileSize = 1024L * 1024 * 1024 * 5; //max allowed file size is 5 gb
     private String fileUrl;
 
     public FileDownloader(String fileUrl, String downloadDir, String fileName) {
@@ -22,8 +22,24 @@ public class FileDownloader {
         this.downloadDir = downloadDir;
         this.fileName = fileName;
         this.fileSize = this.getFileSize(fileUrl);
-        this.completionTracker = new CompletionTracker(this.fileSize / this.chunkSize);
-        this.threadPoolExecutor = new ThreadPoolExecutor(4, 5, 1000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>((int) (maxFileSize / this.chunkSize + 1)));
+        this.setChunkSize();
+        this.completionTracker = new CompletionTracker(Math.max(this.fileSize / this.chunkSize, 1L));
+        this.threadPoolExecutor = new ThreadPoolExecutor(5, 5, 1000, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>((int) (maxFileSize / this.chunkSize + 1)));
+    }
+
+    private void setChunkSize(){
+        if(this.fileSize<(1024L*1024L*100)){
+            //if less than 100mb set chunk size as 10mb
+            this.chunkSize = 1024*1024*10L ;
+        }
+        else if(this.fileSize<(1024L*1024L*1024L)){
+            //if between 100mb and 1 gb set chunk size as 100mb
+            this.chunkSize = 1024*1024*100L ;
+        }
+        else{
+            //if more than 1gb then set chunk size as 200mb
+            this.chunkSize = 1024*1024*200L ;
+        }
     }
 
     private String reformFileUrl(String fileUrl) {

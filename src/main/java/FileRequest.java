@@ -14,7 +14,7 @@ public class FileRequest {
 
     private final StringProperty status = new SimpleStringProperty("Queued");
 
-    private final StringProperty speed = new SimpleStringProperty("0 KB/s");
+    private final StringProperty speed = new SimpleStringProperty("0 bytes/s");
 
     public FileRequest(String fileName, String location, String url, String progress) {
         this.id = UUID.randomUUID().toString();
