@@ -30,12 +30,15 @@ public class FileDownloaderUI extends Application {
         // Input Fields
         TextField fileUrlField = new TextField();
         fileUrlField.setPromptText("File URL");
+        fileUrlField.setText("https://drive.usercontent.google.com/download?confirm=t&id=1-ck_USSw4YvVY3GsDMvryoN8eGRb5mDN");
 
         TextField locationField = new TextField();
         locationField.setPromptText("Save Location");
+        locationField.setText("E:\\Playground\\FileDownloader");
 
         TextField fileNameField = new TextField();
         fileNameField.setPromptText("File Name");
+        fileNameField.setText("1_27_gb.mov");
 
         // Add Button
         Button addButton = new Button("Add to Queue");
@@ -66,10 +69,9 @@ public class FileDownloaderUI extends Application {
             FileRequest fileRequest = new FileRequest(fileName, location, fileUrl, "0%");
             downloadQueue.add(fileRequest);
             ongoingDownloads.add(fileRequest);
-            submitRequest(fileRequest);
 
             VBox fileEntry = new VBox(5);
-            fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 100px; -fx-max-height: 100px;");
+            fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 120px; -fx-max-height: 100px;");
 
             Label fileDetails = new Label(
                     "Downloading: " + fileRequest.getUrl() + "\n↓\n"
@@ -79,8 +81,9 @@ public class FileDownloaderUI extends Application {
 
             ProgressBar progressBar = new ProgressBar(0);
             progressBar.setPrefWidth(Double.MAX_VALUE);
+            Label statusLabel = new Label("Queued");
 
-            fileEntry.getChildren().addAll(fileDetails, progressBar);
+            fileEntry.getChildren().addAll(fileDetails, progressBar, statusLabel);
             queueContainer.getChildren().add(fileEntry);
 
             // Enable scrollbar only if content exceeds container size
@@ -88,18 +91,32 @@ public class FileDownloaderUI extends Application {
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
             }
 
+
+            submitRequest(fileRequest);
+            fileRequest.setStatus("Downloading");
+
+
             Task<Void> task = new Task<Void>() {
                 @Override
                 protected Void call() throws Exception {
                     while (true) {
                         float progress = fileDownloadController.getDownloadProgress(fileRequest.getId());
+                        String downloadSpeed = fileDownloadController.getDownloadSpeed(fileRequest.getId());
                         System.out.println("Progress: " + progress);
                         Platform.runLater(() -> {
                             progressBar.setProgress(progress / 100);
+                            statusLabel.setText("Downloading  | " + downloadSpeed);
                             fileRequest.setProgress(progress + "%");
+                            fileRequest.setSpeed(downloadSpeed);
                         });
                         if (progress == 100.0) {
                             ongoingDownloads.remove(fileRequest);
+                            Platform.runLater(() -> {
+                                statusLabel.setText("Completed");
+                            });
+
+                            fileRequest.setSpeed("0 Kb/s");
+                            fileRequest.setStatus("Completed");
                             break;
                         }
                         Thread.sleep(1000);

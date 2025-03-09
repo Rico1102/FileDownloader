@@ -31,5 +31,28 @@ public class FileDownloadController {
         }
     }
 
+    private String getSpeed(Long bytes, double denominator) {
+        return String.format("%.2f", bytes / (denominator * 5)); //Divided by 5 because its average speed of last 5 secs
+    }
+
+    public String getDownloadSpeed(String downloadId) {
+        if (downloadInProgressMap.containsKey(downloadId)) {
+            Long bytesDownloadedInLastSec = downloadInProgressMap.get(downloadId).getBytesDownloadedInLastSec();
+            String speed = "";
+            if (bytesDownloadedInLastSec < 1024) {
+                speed = getSpeed(bytesDownloadedInLastSec, 1) + " bytes/s";
+            } else if (bytesDownloadedInLastSec < 1024 * 1024) {
+                speed = getSpeed(bytesDownloadedInLastSec, 1024f) + " Kb/s";
+            } else if (bytesDownloadedInLastSec < 1024 * 1024 * 1024L) {
+                speed = getSpeed(bytesDownloadedInLastSec, 1024L * 1024) + " Mb/s";
+            } else {
+                speed = getSpeed(bytesDownloadedInLastSec, 1024L * 1024 * 1024) + " Gb/s";
+            }
+            return speed;
+        } else {
+            return "0 Kb/s";
+        }
+    }
+
 
 }

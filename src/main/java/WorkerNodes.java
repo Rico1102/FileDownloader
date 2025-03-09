@@ -36,6 +36,7 @@ public class WorkerNodes implements Runnable {
 //            System.out.println("Thread " + Thread.currentThread().getId() + " is writing to file from " + this.startByte + " to " + this.endByte);
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 // Write the buffer to the file
+                completionTracker.markBytesDownloaded((long) bytesRead);
                 randomAccessFile.write(buffer, 0, bytesRead);
             }
             completionTracker.markChunkCompleted();

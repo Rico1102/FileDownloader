@@ -1,8 +1,12 @@
 import java.sql.Timestamp;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 public class CompletionTracker {
     private final Long chunks;
+    private final Deque<Long> deque;
     private Long chunksDownloaded = 0L;
+    private Long bytesDownloadedLatest = 0L;
 
     public CompletionTracker(Long chunks) {
         if (chunks == 0) {
@@ -10,10 +14,27 @@ public class CompletionTracker {
         }
         this.chunks = chunks;
         System.out.println("Total Chunks: " + this.chunks);
+        this.deque = new ArrayDeque<>(5);
+        //initial speeds
+        this.deque.add(0L);
+        this.deque.add(0L);
+        this.deque.add(0L);
+        this.deque.add(0L);
+        this.deque.add(0L);
     }
 
     public synchronized void markChunkCompleted() {
         this.chunksDownloaded += 1L;
+    }
+
+    public synchronized void markBytesDownloaded(Long bytesDownloaded) {
+        this.bytesDownloadedLatest += bytesDownloaded;
+    }
+
+    public synchronized Long getDownloadSpeed() {
+        this.deque.poll();
+        this.deque.add(bytesDownloadedLatest);
+        return this.deque.peekLast() - this.deque.peekFirst();
     }
 
     public synchronized Float getPercentage() {

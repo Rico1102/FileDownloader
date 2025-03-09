@@ -12,7 +12,7 @@ public class FileDownloader {
     private final String fileName;
     private final CompletionTracker completionTracker;
     private final long fileSize;
-    private final Long chunkSize = 1024L * 1024L * 10; //10Mb
+    private final Long chunkSize = 1024L * 1024L * 100; //10Mb
     private final ThreadPoolExecutor threadPoolExecutor;
     private final long maxFileSize = 1024L * 1024 * 1024 * 2;
     private String fileUrl;
@@ -89,6 +89,10 @@ public class FileDownloader {
 
     public float getDownloadProgress() {
         return this.completionTracker.getPercentage();
+    }
+
+    public Long getBytesDownloadedInLastSec() {
+        return this.completionTracker.getDownloadSpeed();
     }
 
 }

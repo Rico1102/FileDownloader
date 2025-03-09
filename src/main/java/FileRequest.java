@@ -7,10 +7,14 @@ import java.util.UUID;
 public class FileRequest {
 
     private final StringProperty fileName;
-    private final String id ;
+    private final String id;
     private final StringProperty location;
     private final StringProperty url;
     private final StringProperty progress;
+
+    private final StringProperty status = new SimpleStringProperty("Queued");
+
+    private final StringProperty speed = new SimpleStringProperty("0 KB/s");
 
     public FileRequest(String fileName, String location, String url, String progress) {
         this.id = UUID.randomUUID().toString();
@@ -43,5 +47,21 @@ public class FileRequest {
 
     public void setProgress(String s) {
         progress.set(s);
+    }
+
+    public String getStatus() {
+        return status.get();
+    }
+
+    public void setStatus(String s) {
+        status.set(s);
+    }
+
+    public String getSpeed() {
+        return speed.get();
+    }
+
+    public void setSpeed(String s) {
+        speed.set(s);
     }
 }
