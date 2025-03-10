@@ -154,8 +154,16 @@ public class FileDownloaderUI extends Application {
                 }
             });
 
+            Task<Void> cancelTask = new Task<>() {
+                @Override
+                protected Void call() {
+                    fileDownloadController.cancelDownload(fileRequest.getId());
+                    return null;
+                }
+            };
+
             cancelButton.setOnAction(event -> {
-                fileDownloadController.cancelDownload(fileRequest.getId());
+                new Thread(cancelTask).start();
                 ongoingDownloads.remove(fileRequest);
                 Platform.runLater(() -> {
                     fileEntry.getChildren().removeIf(node -> node instanceof HBox);
@@ -166,9 +174,9 @@ public class FileDownloaderUI extends Application {
             });
 
             // Clear fields after adding
-//            fileUrlField.clear();
-//            locationField.clear();
-//            fileNameField.clear();
+            fileUrlField.clear();
+            locationField.clear();
+            fileNameField.clear();
         });
 
         // Layout
@@ -187,6 +195,19 @@ public class FileDownloaderUI extends Application {
         });
         scene.heightProperty().addListener((obs, oldVal, newVal) -> {
             scrollPane.setPrefHeight(newVal.doubleValue() - 200); // Adjust height proportionally
+        });
+
+        Task<Void> closePendingDownloads = new Task<>() {
+            @Override
+            protected Void call() {
+                ongoingDownloads.forEach(fileRequest -> fileDownloadController.cancelDownload(fileRequest.getId()));
+                fileDownloadController.shutdown();
+                return null;
+            }
+        };
+
+        primaryStage.setOnCloseRequest(e -> {
+            new Thread(closePendingDownloads).start();
         });
 
         primaryStage.setScene(scene);

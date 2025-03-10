@@ -87,7 +87,7 @@ public class CompletionTracker {
     public boolean resume() {
         try {
             this.reentrantLock.lock();
-            System.out.println("Resuming the Completion Tracker Thread");
+//            System.out.println("Resuming the Completion Tracker Thread");
             this.isPaused = false;
             this.condition.signal();
         } finally {

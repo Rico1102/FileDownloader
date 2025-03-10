@@ -89,7 +89,7 @@ public class WorkerNodes implements Runnable {
     public boolean resume() {
         try {
             this.reentrantLock.lock();
-            System.out.println("Resuming the thread {}" + Thread.currentThread().getName());
+//            System.out.println("Resuming the thread {}" + Thread.currentThread().getName());
             this.isPaused = false;
             this.condition.signal();
         } finally {

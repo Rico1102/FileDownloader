@@ -109,7 +109,6 @@ public class FileDownloader {
             e.printStackTrace();
             System.out.println("Not Able to create the file in desired location");
         } catch (InterruptedException e) {
-            e.printStackTrace();
             System.out.println("Thread pool executor interrupted");
             Thread.currentThread().interrupt();
         }
