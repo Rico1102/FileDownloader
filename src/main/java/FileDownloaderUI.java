@@ -6,6 +6,7 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -55,7 +56,7 @@ public class FileDownloaderUI extends Application {
 
         ScrollPane scrollPane = new ScrollPane(queueContainer);
         scrollPane.setFitToWidth(true);
-        scrollPane.setPrefHeight(300); // Auto-adjust to maximize height
+        scrollPane.setPrefHeight(850); // Auto-adjust to maximize height
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); // Hide scrollbar when empty
 
         addButton.setOnAction(e -> {
@@ -73,7 +74,7 @@ public class FileDownloaderUI extends Application {
             ongoingDownloads.add(fileRequest);
 
             VBox fileEntry = new VBox(5);
-            fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 120px; -fx-max-height: 100px;");
+            fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 150px; -fx-max-height: 140px;");
 
             Label fileDetails = new Label(
                     "Downloading: " + fileRequest.getUrl() + "\n↓\n"
@@ -85,7 +86,12 @@ public class FileDownloaderUI extends Application {
             progressBar.setPrefWidth(Double.MAX_VALUE);
             Label statusLabel = new Label("Queued");
 
-            fileEntry.getChildren().addAll(fileDetails, progressBar, statusLabel);
+            Button pauseButton = new Button("Pause");
+            Button cancelButton = new Button("Cancel");
+
+            HBox controlButtons = new HBox(10, pauseButton, cancelButton);
+
+            fileEntry.getChildren().addAll(fileDetails, progressBar, statusLabel, controlButtons);
             queueContainer.getChildren().add(fileEntry);
 
             // Enable scrollbar only if content exceeds container size
@@ -93,7 +99,7 @@ public class FileDownloaderUI extends Application {
                 scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
             }
 
-            CountDownLatch countDownLatch = new CountDownLatch(1) ;
+            CountDownLatch countDownLatch = new CountDownLatch(1);
 
             Task<Void> submitTask = new Task<>() {
                 @Override
@@ -110,8 +116,7 @@ public class FileDownloaderUI extends Application {
                 protected Void call() throws Exception {
                     countDownLatch.await();
                     Timestamp startTimestamp = new Timestamp(System.currentTimeMillis());
-                    System.out.println("Countdown reached to zero for file : " + fileName);
-                    while (true) {
+                    while (!("Cancelled".equalsIgnoreCase(fileRequest.getStatus()))) {
                         float progress = fileDownloadController.getDownloadProgress(fileRequest.getId());
                         String downloadSpeed = fileDownloadController.getDownloadSpeed(fileRequest.getId());
                         Platform.runLater(() -> {
@@ -125,6 +130,8 @@ public class FileDownloaderUI extends Application {
                             Timestamp endTimestamp = new Timestamp(System.currentTimeMillis());
                             Platform.runLater(() -> {
                                 statusLabel.setText(String.format("Downloaded in %.2f seconds", (endTimestamp.getTime() - startTimestamp.getTime()) / 1000f));
+                                fileEntry.getChildren().removeIf(node -> node instanceof HBox);
+                                fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 120px; -fx-max-height: 140px;");
                             });
                             fileRequest.setStatus("Completed");
                             break;
@@ -136,6 +143,27 @@ public class FileDownloaderUI extends Application {
                 }
             };
             new Thread(task).start();
+
+            pauseButton.setOnAction(event -> {
+                if (pauseButton.getText().equals("Pause")) {
+                    pauseButton.setText("Resume");
+                    fileDownloadController.pauseDownload(fileRequest.getId());
+                } else {
+                    pauseButton.setText("Pause");
+                    fileDownloadController.resumeDownload(fileRequest.getId());
+                }
+            });
+
+            cancelButton.setOnAction(event -> {
+                fileDownloadController.cancelDownload(fileRequest.getId());
+                ongoingDownloads.remove(fileRequest);
+                Platform.runLater(() -> {
+                    fileEntry.getChildren().removeIf(node -> node instanceof HBox);
+                    fileEntry.setStyle("-fx-border-color: #4CAF50; -fx-border-radius: 8; -fx-padding: 10; -fx-background-color: #f0f0f0; -fx-pref-width: 100%; -fx-min-height: 120px; -fx-max-height: 140px;");
+                    statusLabel.setText("Cancelled");
+                    fileRequest.setStatus("Cancelled");
+                });
+            });
 
             // Clear fields after adding
 //            fileUrlField.clear();

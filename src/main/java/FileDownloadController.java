@@ -23,11 +23,6 @@ public class FileDownloadController {
     public void submitDownloadRequest(String fileUrl, String downloadDir, String fileName, String downloadId, CountDownLatch countDownLatch) {
         downloadInQueue.add(downloadId);
         executor.submit(new Thread(() -> {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
             System.out.println("Starting Download for file " + fileName);
             countDownLatch.countDown();
             FileDownloader fileDownloader = new FileDownloader(fileUrl, downloadDir, fileName);
@@ -35,6 +30,24 @@ public class FileDownloadController {
             downloadInProgressMap.put(downloadId, fileDownloader) ;
             fileDownloader.download();
         }));
+    }
+
+    public void pauseDownload(String downloadId) {
+        if (downloadInProgressMap.containsKey(downloadId)) {
+            downloadInProgressMap.get(downloadId).pauseDownload();
+        }
+    }
+
+    public void resumeDownload(String downloadId) {
+        if (downloadInProgressMap.containsKey(downloadId)) {
+            downloadInProgressMap.get(downloadId).resumeDownload();
+        }
+    }
+
+    public void cancelDownload(String downloadId) {
+        if (downloadInProgressMap.containsKey(downloadId)) {
+            downloadInProgressMap.get(downloadId).cancelDownload();
+        }
     }
 
     public float getDownloadProgress(String downloadId) {
